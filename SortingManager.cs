@@ -16,7 +16,7 @@ public class SortingManager : SingletonBehaviour<SortingManager>
         {
             UnregisterSprite(newSprite);
         }
-        
+
         if (newSprite.isMovable)
         {
             moveableSpriteList.Add(newSprite);
@@ -27,17 +27,17 @@ public class SortingManager : SingletonBehaviour<SortingManager>
             staticSpriteList.Add(newSprite);
         }
     }
-    
+
     private void SetupStaticDependencies(SortingObject newSprite)
     {
         int theCount = staticSpriteList.Count;
         for (int i = 0; i < theCount; i++)
         {
             SortingObject otherSprite = staticSpriteList[i];
-            
+
             Bounds2D b1 = newSprite.bounds2D;
             Bounds2D b2 = otherSprite.bounds2D;
-            
+
             if (b1.Intersects(b2))
             {
                 int compareResult = CompareIsoSorters(newSprite, otherSprite);
@@ -56,8 +56,9 @@ public class SortingManager : SingletonBehaviour<SortingManager>
             }
         }
     }
-    
-    public void UnregisterSprite(SortingObject spriteToRemove) {
+
+    public void UnregisterSprite(SortingObject spriteToRemove)
+    {
         if (spriteToRemove.isMovable)
         {
             moveableSpriteList.Remove(spriteToRemove);
@@ -68,7 +69,7 @@ public class SortingManager : SingletonBehaviour<SortingManager>
             RemoveStaticDependencies(spriteToRemove);
         }
     }
-    
+
     private void RemoveStaticDependencies(SortingObject spriteToRemove)
     {
         for (int i = 0; i < spriteToRemove.inverseStaticDependencies.Count; i++)
@@ -79,16 +80,16 @@ public class SortingManager : SingletonBehaviour<SortingManager>
         spriteToRemove.inverseStaticDependencies.Clear();
         spriteToRemove.staticDependencies.Clear();
     }
-    
+
     #endregion
-    
+
     #region [UPDATE]
-    
+
     void Update()
     {
         UpdateSorting();
     }
-    
+
     private readonly List<SortingObject> sortedSprites = new List<SortingObject>(64);
     public void UpdateSorting()
     {
@@ -97,7 +98,7 @@ public class SortingManager : SingletonBehaviour<SortingManager>
         {
             moveableSpriteList[i].UpdatePosition();
         }
-        
+
         // 움직이는 오브젝트 Order 초기화
         for (int i = 0; i < staticSpriteList.Count; i++)
         {
@@ -107,7 +108,7 @@ public class SortingManager : SingletonBehaviour<SortingManager>
         {
             moveableSpriteList[i].movingDependencies.Clear();
         }
-        
+
         // Order 다시 계산 후 등록
         AddMovingDependencies(moveableSpriteList, staticSpriteList);
 
@@ -115,7 +116,7 @@ public class SortingManager : SingletonBehaviour<SortingManager>
         TopologicalSort.Sort(staticSpriteList, moveableSpriteList, sortedSprites);
         SetSortOrderBasedOnListOrder(sortedSprites);
     }
-    
+
     private void AddMovingDependencies(List<SortingObject> moveableList, List<SortingObject> staticList)
     {
         int moveableCount = moveableList.Count;
@@ -123,7 +124,7 @@ public class SortingManager : SingletonBehaviour<SortingManager>
         for (int i = 0; i < moveableCount; i++)
         {
             SortingObject moveSprite1 = moveableList[i];
-            
+
             //Add Moving Dependencies to static sprites
             for (int j = 0; j < staticCount; j++)
             {
@@ -169,9 +170,9 @@ public class SortingManager : SingletonBehaviour<SortingManager>
         }
     }
     #endregion
-    
+
     #region [SORTING ALGORITHM]
-    
+
     /// <summary>
     /// 두 개의 SortingObject 순서를 비교
     /// </summary>
@@ -188,19 +189,19 @@ public class SortingManager : SingletonBehaviour<SortingManager>
         {
             int result = object2.SortingPoint1.y.CompareTo(object1.SortingPoint1.y);
             return result != 0 ? result : object2.SortingPoint1.x.CompareTo(object1.SortingPoint1.x);
-        }        
+        }
         if (object1.sortType == SortType.Line && object2.sortType == SortType.Line)
             return CompareLineAndLine(object1, object2);
-        
+
         if (object1.sortType == SortType.Point && object2.sortType == SortType.Line)
             return ComparePointAndLine(object1.SortingPoint1, object2);
-        
+
         if (object1.sortType == SortType.Line && object2.sortType == SortType.Point)
             return -ComparePointAndLine(object2.SortingPoint1, object1);
-        
+
         return 0;
     }
-    
+
     private int CompareLineAndLine(SortingObject line1, SortingObject line2)
     {
         Vector2 line1Point1 = line1.SortingPoint1;
@@ -217,16 +218,16 @@ public class SortingManager : SingletonBehaviour<SortingManager>
         int comp4 = ComparePointAndLine(line2Point2, line1);
         int twoVSone = int.MinValue;
         if (comp3 == comp4) twoVSone = -comp3;
-        
+
         if (oneVStwo != int.MinValue && twoVSone != int.MinValue)
         {
             if (oneVStwo == twoVSone) return oneVStwo;
             return CompareLineCenters(line1, line2);
         }
-        
+
         if (oneVStwo != int.MinValue) return oneVStwo;
         if (twoVSone != int.MinValue) return twoVSone;
-        
+
         return CompareLineCenters(line1, line2);
     }
 
@@ -235,20 +236,21 @@ public class SortingManager : SingletonBehaviour<SortingManager>
         return -line1.AsPoint.y.CompareTo(line2.AsPoint.y);
     }
 
-    private int ComparePointAndLine(Vector3 point, SortingObject line) {
+    private int ComparePointAndLine(Vector3 point, SortingObject line)
+    {
         float pointY = point.y;
         if (pointY > line.SortingPoint1.y && pointY > line.SortingPoint2.y) return -1;
         if (pointY < line.SortingPoint1.y && pointY < line.SortingPoint2.y) return 1;
-  
+
         float slope = (line.SortingPoint2.y - line.SortingPoint1.y) /
                       (line.SortingPoint2.x - line.SortingPoint1.x);
         float intercept = line.SortingPoint1.y - (slope * line.SortingPoint1.x); // line 그래프의 y절편
         float yOnLineForPoint = (slope * point.x) + intercept; // x = point.x 그래프와 line 그래프 교점의 y값
         return yOnLineForPoint > point.y ? 1 : -1;
     }
-    
+
     #endregion
-    
+
 }
 
 public static class TopologicalSort
